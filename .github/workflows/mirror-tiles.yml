@@ -1,0 +1,163 @@
+name: Copy Andromeda tiles to R2
+
+# Run this by hand from the Actions tab (Run workflow). It copies ESA/Hubble's
+# Andromeda tiles on GitHub's servers, then uploads them to your Cloudflare R2 bucket.
+# Image credit: NASA, ESA, J. Dalcanton, B. F. Williams, L. C. Johnson (University of
+# Washington), the PHAT team, and R. Gendler. ESA/Hubble, CC BY 4.0.
+on:
+  workflow_dispatch:
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+      R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+    steps:
+      - name: Download tiles from ESA/Hubble
+        run: |
+          cat > mirror.py <<'PY'
+          #!/usr/bin/env python3
+          """Copy the ESA/Hubble Andromeda (heic1502a) Zoomify tiles into a local folder.
+
+          Needs only Python 3.9+ (standard library, nothing to install). Safe to stop with
+          Ctrl+C and run again: finished tiles are skipped.
+
+          Usage:
+              python3 mirror_andromeda_tiles.py              # copies into ./andromeda/
+              python3 mirror_andromeda_tiles.py --dry-run    # just counts the tiles
+              python3 mirror_andromeda_tiles.py --workers 2  # even gentler on ESA's server
+
+          Image credit: NASA, ESA, J. Dalcanton, B. F. Williams, L. C. Johnson (University of
+          Washington), the PHAT team, and R. Gendler. ESA/Hubble, CC BY 4.0. Keep that credit
+          visible wherever you show the image.
+          """
+          import argparse
+          import os
+          import sys
+          import time
+          import urllib.error
+          import urllib.request
+          from concurrent.futures import ThreadPoolExecutor, as_completed
+
+          SRC = "https://cdn.esahubble.org/archives/images/zoomable/heic1502a/"
+          W, H, T = 69536, 22230, 256          # full image size and tile size in pixels
+          UA = {"User-Agent": "andromeda-tile-copy/1.0 (personal copy, CC BY 4.0)"}
+
+
+          def tile_list():
+              """Every tile path in the Zoomify layout, smallest level first."""
+              dims = [(W, H)]
+              while dims[0][0] > T or dims[0][1] > T:
+                  dims.insert(0, ((dims[0][0] + 1) // 2, (dims[0][1] + 1) // 2))
+              tiles, offset = [], 0
+              for level, (w, h) in enumerate(dims):
+                  cols, rows = -(-w // T), -(-h // T)
+                  for y in range(rows):
+                      for x in range(cols):
+                          index = offset + y * cols + x
+                          tiles.append("TileGroup%d/%d-%d-%d.jpg" % (index // 256, level, x, y))
+                  offset += cols * rows
+              return tiles
+
+
+          def fetch(url, dest, tries=5):
+              """Download one tile. Returns 'ok', 'skip', 'missing' or 'failed'."""
+              if os.path.exists(dest) and os.path.getsize(dest) > 0:
+                  return "skip"
+              os.makedirs(os.path.dirname(dest), exist_ok=True)
+              for attempt in range(tries):
+                  try:
+                      req = urllib.request.Request(url, headers=UA)
+                      with urllib.request.urlopen(req, timeout=30) as resp:
+                          data = resp.read()
+                      if len(data) < 100 or data[:2] != b"\xff\xd8":
+                          raise ValueError("response was not a JPEG")
+                      tmp = dest + ".part"
+                      with open(tmp, "wb") as f:
+                          f.write(data)
+                      os.replace(tmp, dest)
+                      return "ok"
+                  except urllib.error.HTTPError as e:
+                      if e.code == 404:
+                          return "missing"
+                  except Exception:
+                      pass
+                  time.sleep(2 ** attempt)           # wait 1, 2, 4, 8 seconds between tries
+              return "failed"
+
+
+          def main():
+              ap = argparse.ArgumentParser(description="Copy the Andromeda tiles from ESA/Hubble.")
+              ap.add_argument("--out", default="andromeda", help="folder to write into (default: andromeda)")
+              ap.add_argument("--workers", type=int, default=4, help="parallel downloads (default: 4)")
+              ap.add_argument("--dry-run", action="store_true", help="count tiles without downloading")
+              a = ap.parse_args()
+
+              tiles = tile_list()
+              print("%d tiles -> %s/" % (len(tiles), a.out))
+              if a.dry_run:
+                  print("first: %s\nlast:  %s" % (tiles[0], tiles[-1]))
+                  return 0
+
+              # Check the very first tile before starting, so a wrong URL fails fast.
+              first = fetch(SRC + tiles[0], os.path.join(a.out, tiles[0]))
+              if first not in ("ok", "skip"):
+                  print("Couldn't fetch %s%s (%s). Check your connection and try again." % (SRC, tiles[0], first))
+                  return 1
+
+              # Not needed by the viewer, but handy to keep alongside the tiles.
+              try:
+                  req = urllib.request.Request(SRC + "ImageProperties.xml", headers=UA)
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      with open(os.path.join(a.out, "ImageProperties.xml"), "wb") as f:
+                          f.write(resp.read())
+              except Exception:
+                  pass
+
+              counts = {"ok": 0, "skip": 0, "missing": 0, "failed": 0}
+              bad, done, start = [], 0, time.time()
+              ex = ThreadPoolExecutor(max_workers=max(1, a.workers))
+              try:
+                  futures = {ex.submit(fetch, SRC + t, os.path.join(a.out, t)): t for t in tiles}
+                  for fut in as_completed(futures):
+                      result = fut.result()
+                      counts[result] += 1
+                      done += 1
+                      if result in ("missing", "failed"):
+                          bad.append(futures[fut])
+                      if done % 500 == 0 or done == len(tiles):
+                          rate = counts["ok"] / max(1, time.time() - start)
+                          left = (len(tiles) - done) / rate / 60 if rate > 0 else 0
+                          print("%5.1f%%  %d/%d  %.1f new tiles/s  ~%d min left" %
+                                (100.0 * done / len(tiles), done, len(tiles), rate, left))
+              except KeyboardInterrupt:
+                  print("\nStopped. Run the same command again to carry on where it left off.")
+                  ex.shutdown(wait=False, cancel_futures=True)
+                  return 130
+              ex.shutdown()
+
+              print("\nDownloaded %d, already had %d, missing %d, failed %d." %
+                    (counts["ok"], counts["skip"], counts["missing"], counts["failed"]))
+              if bad:
+                  with open("failed_tiles.txt", "w") as f:
+                      f.write("\n".join(bad) + "\n")
+                  print("Run the command again to retry the %d that didn't copy (listed in failed_tiles.txt)." % len(bad))
+                  return 1
+              print("All tiles copied. Next: upload the '%s' folder to your hosting." % a.out)
+              return 0
+
+
+          if __name__ == "__main__":
+              sys.exit(main())
+          PY
+          python3 mirror.py --workers 6 || python3 mirror.py --workers 6 || python3 mirror.py --workers 6
+
+      - name: Upload tiles to R2
+        run: aws s3 sync andromeda "s3://$R2_BUCKET/andromeda" --endpoint-url "$R2_ENDPOINT" --only-show-errors
