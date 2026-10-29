@@ -160,4 +160,14 @@ jobs:
           python3 mirror.py --workers 6 || python3 mirror.py --workers 6 || python3 mirror.py --workers 6
 
       - name: Upload tiles to R2
-        run: aws s3 sync andromeda "s3://$R2_BUCKET/andromeda" --endpoint-url "$R2_ENDPOINT" --only-show-errors
+        run: |
+          # Strip any stray spaces or line breaks that came along when the secrets were pasted
+          export AWS_ACCESS_KEY_ID="$(printf '%s' "$AWS_ACCESS_KEY_ID" | tr -d '[:space:]')"
+          export AWS_SECRET_ACCESS_KEY="$(printf '%s' "$AWS_SECRET_ACCESS_KEY" | tr -d '[:space:]')"
+          R2_BUCKET="$(printf '%s' "$R2_BUCKET" | tr -d '[:space:]')"
+          R2_ENDPOINT="$(printf '%s' "$R2_ENDPOINT" | tr -d '[:space:]')"
+          for i in 1 2 3; do
+            aws s3 sync andromeda "s3://$R2_BUCKET/andromeda" --endpoint-url "$R2_ENDPOINT" --only-show-errors && exit 0
+            echo "Upload attempt $i didn't finish cleanly, trying again"
+          done
+          exit 1
