@@ -30,8 +30,12 @@
     background: rgba(0, 0, 0, 0.65); color: #b8bcc4;
     font: 12px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     pointer-events: none;
+    transition: opacity 0.35s ease;
   }
   .credit a { color: #e6e8ec; pointer-events: auto; }
+  .credit.hide { opacity: 0; }
+  .credit.hide a { pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { .credit { transition: none; } }
   #msg {
     position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
     padding: 24px; text-align: center; pointer-events: none;
@@ -61,6 +65,9 @@
   // If you tile the image yourself with libvips:
   //   vips dzsave andromeda.tif andromeda --layout zoomify --tile-size 256 --overlap 0 --suffix .jpg[Q=80]
   var TILES_URL = "https://pub-677efaba17ee45dcb62fd77015a5a203.r2.dev/andromeda/";
+  // How far you can zoom in, in screen pixels per image pixel.
+  // About 1 = how far the first version went on an iPhone, 3 = how far ESA's own viewer goes.
+  var MAX_ZOOM = 1.5;
   var W = 69536, H = 22230, T = 256;   // full image size and tile size in pixels
 
   // ---- Zoomify pyramid: level 0 is the smallest, the last level is full size ----
@@ -81,7 +88,7 @@
   }
 
   // ---- State ----
-  var cv = document.getElementById("view"), ctx = cv.getContext("2d"), msg = document.getElementById("msg");
+  var cv = document.getElementById("view"), ctx = cv.getContext("2d"), msg = document.getElementById("msg"), credit = document.querySelector(".credit");
   var REDUCE = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   var dpr = 1, vw = 0, vh = 0, minZ = 0.01, maxZ = 3;
   var cx = W / 2, cy = H / 2, z = minZ;          // view centre (image px) and zoom (CSS px per image px)
@@ -104,7 +111,7 @@
     vw = window.innerWidth; vh = window.innerHeight;
     cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
     minZ = Math.min(vw / W, vh / H);
-    maxZ = 3;                              // at most 3 screen pixels per image pixel
+    maxZ = MAX_ZOOM;
     if (atFit) z = minZ;
     clampView(); invalidate();
   }
@@ -188,6 +195,7 @@
     ctx.globalAlpha = 1;
     needed.sort(function (p, q) { return p.p - q.p; });
     pump(); evict();
+    credit.classList.toggle("hide", z > minZ * 1.02);   // visible at the full view, faded out when zoomed in
   }
 
   // ---- Animation loop (runs only while something is moving) ----
