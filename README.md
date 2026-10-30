@@ -2,6 +2,9 @@
 
 <p><b>⋆★<ins>ANDROMEDA GALAXY ZOOM</ins>★⋆</b></p>
 
+[Visit my Live Website](https://ncraparo.github.io/andromeda-mirror)
+
+
 Zoom into a section of the Andromeda Galaxy to see its stars!
 
 This image, captured with the NASA/ESA Hubble Space Telescope, is the largest and sharpest image ever taken of the Andromeda galaxy — otherwise known as M31.
@@ -19,14 +22,14 @@ Size:	69536 x 22230 px (approx. 1.5 billion pixels)<br>
 File Type: PSB (Large Document Format/Photoshop Big File)<br>
 Image Definition Rating: 70k (resolution)
 
-<b><ins>About the Object</ins></b><br>
+<ins>About the Object</ins</b><br>
 Name:	Andromeda Galaxy, M 31, Messier 31<br>
 Type:	Local Universe : Galaxy : Type : Spiral<br>
 Distance:	2 million light years<br>
 Constellation:	Andromeda<br>
 Category:	Galaxies<br>
 
-<p><b><ins>Credit</ins></b></p>
+<b><ins>Credit</ins></b><br>
 NASA, ESA, J. Dalcanton (University of Washington, USA), B. F. Williams (University of Washington, USA), L. C. Johnson (University of Washington, USA), the PHAT team, and R. Gendler.
 
 <b>(image is too large to be easily displayed at full resolution which this zoom tool fixes)</b>
