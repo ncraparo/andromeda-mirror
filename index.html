@@ -104,7 +104,7 @@
     vw = window.innerWidth; vh = window.innerHeight;
     cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
     minZ = Math.min(vw / W, vh / H);
-    maxZ = 3 / dpr;                              // at most 3 screen pixels per image pixel
+    maxZ = 3;                              // at most 3 screen pixels per image pixel
     if (atFit) z = minZ;
     clampView(); invalidate();
   }
