@@ -1,5 +1,8 @@
 # andromeda-mirror
 
+
+$$\underline{\mathbf{\color{#4A2E80}{\Huge\text{Andromeda Galaxy Zoom}}}}$
+
 <h3 align="left">
   <font color="#4A2E80">
     Andromeda Galaxy Zoom
