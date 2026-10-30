@@ -2,7 +2,7 @@
 
 <p><b>⋆★<ins>ANDROMEDA GALAXY ZOOM</ins>★⋆</b></p>
 
-[Visit my Live Website](https://ncraparo.github.io/andromeda-mirror)
+[⋆★ANDROMEDA GALAXY ZOOM★⋆](https://ncraparo.github.io/andromeda-mirror)
 
 
 Zoom into a section of the Andromeda Galaxy to see its stars!
