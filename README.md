@@ -10,7 +10,7 @@ This is a cropped version of the full image and has 1.5 billion pixels. You woul
 
 It is the biggest Hubble image ever released and shows over 100 million stars and thousands of star clusters embedded in a section of the galaxy’s pancake-shaped disc stretching across over 40 000 light-years.
 
-<p><b><ins>About the Image</ins></b></p>
+<b><ins>About the Image</ins></b><br>
 Id:	heic1502a<br>
 Type:	Observation<br>
 Release date:	5 January 2015, 23:15<br>
@@ -19,7 +19,7 @@ Size:	69536 x 22230 px (approx. 1.5 billion pixels)<br>
 File Type: PSB (Large Document Format/Photoshop Big File)<br>
 Image Definition Rating: 70k (resolution)
 
-<p><b><ins>About the Object</ins></b></p>
+<b><ins>About the Object</ins></b><br>
 Name:	Andromeda Galaxy, M 31, Messier 31<br>
 Type:	Local Universe : Galaxy : Type : Spiral<br>
 Distance:	2 million light years<br>
