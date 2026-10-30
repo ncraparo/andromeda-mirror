@@ -20,7 +20,7 @@ Size:	69536 x 22230 px (approx. 1.5 billion pixels)<br>
 File Type: PSB (Large Document Format/Photoshop Big File)<br>
 Image Definition Rating: 70k (resolution)
 
-<ins>About the Object</ins</b><br>
+<b><ins>About the Object</ins</b><br>
 Name:	Andromeda Galaxy, M 31, Messier 31<br>
 Type:	Local Universe : Galaxy : Type : Spiral<br>
 Distance:	2 million light years<br>
